@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/google/wire"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -93,31 +92,6 @@ func (s *Server) Close() error {
 	}
 
 	return nil
-}
-
-// httpGrpcRouter is http grpc router.
-func (s *Server) httpGrpcRouter() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.ProtoMajor == 2 && strings.Contains(r.Header.Get("Content-Type"), "application/grpc") {
-			s.grpcServer.ServeHTTP(w, r)
-			return
-		}
-
-		// middleware that adds CORS headers to the response.
-		h := w.Header()
-		h.Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		h.Set("Access-Control-Allow-Credentials", "true")
-
-		if r.Method == http.MethodOptions {
-			h.Set("Access-Control-Methods", "POST, PUT, PATCH, DELETE")
-			h.Set("Access-Control-Allow-Headers", "Access-Control-Allow-Origin,Content-Type")
-			h.Set("Access-Control-Max-Age", "86400")
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-
-		s.httpServer.ServeHTTP(w, r)
-	})
 }
 
 // loadTLSCredentials loads TLS credentials from the configuration
