@@ -1,0 +1,14 @@
+.run/
+.idea/
+.github/
+tests/
+*.md
+**/*.log
+*_test.go
+.env
+.env.example
+.golangci.yml
+Makefile
+buf.gen.yaml
+buf.yaml
+buf.lock
