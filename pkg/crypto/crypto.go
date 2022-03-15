@@ -1,4 +1,4 @@
-package utils
+package crypto
 
 import (
 	"bytes"
@@ -12,21 +12,21 @@ import (
 	"fmt"
 )
 
-// PKCS7Padding PKCS7Padding
+// PKCS7Padding PKCS7 Padding
 func PKCS7Padding(ciphertext []byte) []byte {
 	padding := aes.BlockSize - len(ciphertext)%aes.BlockSize
 	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
 	return append(ciphertext, padtext...)
 }
 
-// PKCS7UnPadding PKCS7UnPadding
+// PKCS7UnPadding PKCS7 UnPadding
 func PKCS7UnPadding(plantText []byte) []byte {
 	length := len(plantText)
 	unpadding := int(plantText[length-1])
 	return plantText[:(length - unpadding)]
 }
 
-// EncryptAES EncryptAES
+// EncryptAES encrypt AES
 func EncryptAES(data, key string) (string, error) {
 	plaintext := PKCS7Padding([]byte(data))
 
@@ -46,7 +46,7 @@ func EncryptAES(data, key string) (string, error) {
 	return encrypted, nil
 }
 
-// DecryptAES DecryptAES
+// DecryptAES decrypt AES
 func DecryptAES(data, key string) (string, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(data)
 	if err != nil {
