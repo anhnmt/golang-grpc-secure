@@ -3,8 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -21,11 +19,15 @@ type MiddlewarePayload struct {
 // ResponseWriter wrap http response to CryptoService response body
 type ResponseWriter struct {
 	http.ResponseWriter
-	Buf bytes.Buffer
+	buf bytes.Buffer
 }
 
-func (erw *ResponseWriter) Write(p []byte) (int, error) {
-	return erw.Buf.Write(p)
+func (rw *ResponseWriter) Write(p []byte) (int, error) {
+	return rw.buf.Write(p)
+}
+
+func (rw *ResponseWriter) String() string {
+	return rw.buf.String()
 }
 
 // httpGrpcRouter is http grpc router.
@@ -50,26 +52,24 @@ func (s *Server) httpGrpcRouter() http.Handler {
 		}
 
 		// middleware that decrypts the request body.
-		parseRequestBody(s.log, w, r)
+		rw := &ResponseWriter{ResponseWriter: w}
+		parseRequestBody(s.log, rw, r)
 
 		// Wrap response write by ResponseWriter
-		responseWriter := &ResponseWriter{
-			ResponseWriter: w,
-		}
-		s.httpServer.ServeHTTP(responseWriter, r)
+		s.httpServer.ServeHTTP(rw, r)
 
-		encryptResponseBody(s.log, responseWriter, r)
+		encryptResponseBody(s.log, rw, r)
 		return
 	})
 }
 
-func writeErrorResponse(w http.ResponseWriter, status int, message interface{}) {
+func writeResponse(w http.ResponseWriter, status int, message interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(message)
 }
 
-func parseRequestBody(log *zap.Logger, w http.ResponseWriter, r *http.Request) {
+func parseRequestBody(log *zap.Logger, w *ResponseWriter, r *http.Request) {
 	payload := &MiddlewarePayload{}
 	if err := json.NewDecoder(r.Body).Decode(payload); err != nil {
 		log.Error("json decode error", zap.Error(err))
@@ -79,7 +79,7 @@ func parseRequestBody(log *zap.Logger, w http.ResponseWriter, r *http.Request) {
 	requestKeyRaw := r.Header.Get("requestKey")
 	if requestKeyRaw == "" {
 		log.Error("requestKey is empty")
-		writeErrorResponse(w, http.StatusBadRequest, "requestKey is empty")
+		writeResponse(w, http.StatusBadRequest, "requestKey is empty")
 		return
 	}
 
@@ -93,28 +93,27 @@ func parseRequestBody(log *zap.Logger, w http.ResponseWriter, r *http.Request) {
 	r.Body = ioutil.NopCloser(strings.NewReader(decodedQuery))
 }
 
-func encryptResponseBody(log *zap.Logger, w *ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func encryptResponseBody(log *zap.Logger, rw *ResponseWriter, r *http.Request) {
+	rw.ResponseWriter.Header().Set("Content-Type", "application/json")
 
 	requestKeyRaw := r.Header.Get("requestKey")
 	if requestKeyRaw == "" {
 		log.Error("requestKey is empty")
-		writeErrorResponse(w, http.StatusBadRequest, "requestKey is empty")
+		writeResponse(rw.ResponseWriter, http.StatusBadRequest, "requestKey is empty")
 		return
 	}
 
-	log.Info("response", zap.String("data", w.Buf.String()))
+	log.Info("response", zap.String("data", rw.String()))
 
-	encodedQuery, err := crypto.EncryptAES(w.Buf.String(), requestKeyRaw)
+	encodedQuery, err := crypto.EncryptAES(rw.String(), requestKeyRaw)
 	if err != nil {
 		log.Panic("decrypt error", zap.Error(err))
 	}
 
 	log.Info("encodedQuery", zap.String("data", encodedQuery))
 
-	if _, err = io.Copy(w.ResponseWriter, strings.NewReader(encodedQuery)); err != nil {
-		log.Error(fmt.Sprintf("failed to write response body: %v", err))
-		writeErrorResponse(w, http.StatusInternalServerError, "fail to write response body")
-		return
+	payload := &MiddlewarePayload{
+		Data: encodedQuery,
 	}
+	writeResponse(rw.ResponseWriter, http.StatusOK, payload)
 }
