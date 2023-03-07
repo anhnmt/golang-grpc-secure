@@ -15,7 +15,7 @@ require (
 	go.elastic.co/ecszap v1.0.1
 	go.mongodb.org/mongo-driver v1.8.4
 	go.uber.org/zap v1.21.0
-	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
+	golang.org/x/crypto v0.1.0
 	google.golang.org/genproto v0.0.0-20220303160752-862486edd9cc
 	google.golang.org/grpc v1.44.0
 	google.golang.org/protobuf v1.27.1
@@ -46,10 +46,10 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/net v0.1.0 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
-	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/sys v0.1.0 // indirect
+	golang.org/x/text v0.4.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
